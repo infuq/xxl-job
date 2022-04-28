@@ -67,7 +67,7 @@ public class XxlJobExecutor  {
         // init logpath
         XxlJobFileAppender.initLogPath(logPath);
 
-        // init invoker, admin-client
+        // init invoker, admin-client  adminAddresses = http://127.0.0.1:8080/xxl-job-admin
         initAdminBizList(adminAddresses, accessToken);
 
 
@@ -77,7 +77,7 @@ public class XxlJobExecutor  {
         // init TriggerCallbackThread
         TriggerCallbackThread.getInstance().start();
 
-        // init executor-server
+        // init executor-server address=""  ip=""  port=9999
         initEmbedServer(address, ip, port, appname, accessToken);
     }
     public void destroy(){
@@ -113,6 +113,8 @@ public class XxlJobExecutor  {
 
     // ---------------------- admin-client (rpc invoker) ----------------------
     private static List<AdminBiz> adminBizList;
+
+    // adminAddresses = http://127.0.0.1:8080/xxl-job-admin
     private void initAdminBizList(String adminAddresses, String accessToken) throws Exception {
         if (adminAddresses!=null && adminAddresses.trim().length()>0) {
             for (String address: adminAddresses.trim().split(",")) {
@@ -153,7 +155,7 @@ public class XxlJobExecutor  {
         }
 
         // start
-        embedServer = new EmbedServer();
+        embedServer = new EmbedServer(); //address=http://192.168.0.101:9999/
         embedServer.start(address, port, appname, accessToken);
     }
 

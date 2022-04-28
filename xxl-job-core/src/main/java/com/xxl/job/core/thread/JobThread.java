@@ -102,6 +102,9 @@ public class JobThread extends Thread{
 
 		// execute
 		while(!toStop){
+
+			System.out.println("真正执行任务的线程:" + Thread.currentThread().getName());
+
 			running = false;
 			idleTimes++;
 

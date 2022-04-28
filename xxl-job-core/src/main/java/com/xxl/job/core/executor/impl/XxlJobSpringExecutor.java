@@ -34,7 +34,7 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
         // init JobHandler Repository
         /*initJobHandlerRepository(applicationContext);*/
 
-        // init JobHandler Repository (for method)
+        // init JobHandler Repository (for method) 找出所有@XxlJob放入到一个Map中
         initJobHandlerMethodRepository(applicationContext);
 
         // refresh GlueFactory
@@ -150,7 +150,7 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
                     }
                 }
 
-                // registry jobhandler
+                // registry jobhandler  注册到一个Map中
                 registJobHandler(name, new MethodJobHandler(bean, executeMethod, initMethod, destroyMethod));
             }
         }

@@ -24,19 +24,19 @@ public class XxlJobScheduler  {
         // init i18n
         initI18n();
 
-        // admin trigger pool start
+        // admin trigger pool start  线程池
         JobTriggerPoolHelper.toStart();
 
         // admin registry monitor run
         JobRegistryHelper.getInstance().start();
 
-        // admin fail-monitor run
+        // admin fail-monitor run   线程JobFailMonitorHelper
         JobFailMonitorHelper.getInstance().start();
 
         // admin lose-monitor run ( depend on JobTriggerPoolHelper )
         JobCompleteHelper.getInstance().start();
 
-        // admin log report start
+        // admin log report start  日志
         JobLogReportHelper.getInstance().start();
 
         // start-schedule  ( depend on JobTriggerPoolHelper )

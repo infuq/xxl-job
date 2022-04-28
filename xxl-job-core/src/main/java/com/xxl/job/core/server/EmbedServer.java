@@ -162,6 +162,7 @@ public class EmbedServer {
             bizThreadPool.execute(new Runnable() {
                 @Override
                 public void run() {
+
                     // do invoke
                     Object responseObj = process(httpMethod, uri, requestData, accessTokenReq);
 

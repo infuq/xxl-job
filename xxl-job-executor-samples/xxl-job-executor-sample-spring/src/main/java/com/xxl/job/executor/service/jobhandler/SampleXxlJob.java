@@ -36,13 +36,16 @@ public class SampleXxlJob {
      */
     @XxlJob("demoJobHandler")
     public void demoJobHandler() throws Exception {
-        XxlJobHelper.log("XXL-JOB, Hello World.");
 
-        for (int i = 0; i < 5; i++) {
-            XxlJobHelper.log("beat at:" + i);
-            TimeUnit.SECONDS.sleep(2);
-        }
-        // default success
+        XxlJobHelper.log("当前线程:" + Thread.currentThread().getName());
+//        System.out.println("当前线程:" + Thread.currentThread().getName());
+
+//        Thread.sleep(1000_1000);
+//        int i = 3;
+//        int j = 0;
+//        int k = i / j;
+//        XxlJobHelper.log("出现异常...");
+
     }
 
 
