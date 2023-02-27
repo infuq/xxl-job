@@ -43,6 +43,7 @@ public class JobScheduleHelper {
             public void run() {
 
                 try {
+                    // 表示scheduleThread线程只选择在一分钟内的第5,10,15,20,25,30,35,40,45,50,55,60秒被执行
                     TimeUnit.MILLISECONDS.sleep(5000 - System.currentTimeMillis()%1000 );
                 } catch (InterruptedException e) {
                     if (!scheduleThreadToStop) {
@@ -51,6 +52,7 @@ public class JobScheduleHelper {
                 }
                 logger.info(">>>>>>>>> init xxl-job admin scheduler success.");
 
+                // 假设50ms触发一次, 那么1秒可以触发20次, 那么N个线程可以1秒内可以被触发20*N次
                 // pre-read count: treadpool-size * trigger-qps (each trigger cost 50ms, qps = 1000/50 = 20)
                 int preReadCount = (XxlJobAdminConfig.getAdminConfig().getTriggerPoolFastMax() + XxlJobAdminConfig.getAdminConfig().getTriggerPoolSlowMax()) * 20;
 
@@ -70,13 +72,15 @@ public class JobScheduleHelper {
                         connAutoCommit = conn.getAutoCommit();
                         conn.setAutoCommit(false);
 
-                        preparedStatement = conn.prepareStatement(  "select * from xxl_job_lock where lock_name = 'schedule_lock' for update" );
+                        String sql = "select * from xxl_job_lock where lock_name = 'schedule_lock' for update";
+                        preparedStatement = conn.prepareStatement(sql);
                         preparedStatement.execute();
 
                         // tx start
 
                         // 1、pre read
                         long nowTime = System.currentTimeMillis();
+                        // 查询触发时间在接下来5秒内的任务,最多查询preReadCount条记录
                         List<XxlJobInfo> scheduleList = XxlJobAdminConfig.getAdminConfig().getXxlJobInfoDao().scheduleJobQuery(nowTime + PRE_READ_MS, preReadCount);
                         if (scheduleList!=null && scheduleList.size()>0) {
                             // 2、push time-ring
@@ -84,13 +88,26 @@ public class JobScheduleHelper {
 
                                 // time-ring jump
                                 if (nowTime > jobInfo.getTriggerNextTime() + PRE_READ_MS) {
+
+                                    /*
+                                     *
+                                     * ------taskTime---current-5s-------------current-------------current+5s------------->
+                                     *
+                                     *
+                                     */
+
+                                    // 该情况表示已经超过任务的执行时间(已超过5秒未被执行)
+
+
                                     // 2.1、trigger-expire > 5s：pass && make next-trigger-time
                                     logger.warn(">>>>>>>>>>> xxl-job, schedule misfire, jobId = " + jobInfo.getId());
 
                                     // 1、misfire match
                                     MisfireStrategyEnum misfireStrategyEnum = MisfireStrategyEnum.match(jobInfo.getMisfireStrategy(), MisfireStrategyEnum.DO_NOTHING);
+                                    // 根据调度过期策略(页面可以配置该值)
                                     if (MisfireStrategyEnum.FIRE_ONCE_NOW == misfireStrategyEnum) {
                                         // FIRE_ONCE_NOW 》 trigger
+                                        // 直接触发执行任务
                                         JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.MISFIRE, -1, null, null, null);
                                         logger.debug(">>>>>>>>>>> xxl-job, schedule push trigger : jobId = " + jobInfo.getId() );
                                     }
@@ -99,9 +116,20 @@ public class JobScheduleHelper {
                                     refreshNextValidTime(jobInfo, new Date());
 
                                 } else if (nowTime > jobInfo.getTriggerNextTime()) {
+
+                                    /*
+                                     *
+                                     * ---------current-5s------taskTime-------current-------------current+5s------------->
+                                     *
+                                     *
+                                     */
+
+                                    // 该情况表示已经超过任务的执行时间(还未超过5秒未被执行)
+
                                     // 2.2、trigger-expire < 5s：direct-trigger && make next-trigger-time
 
                                     // 1、trigger
+                                    // 直接触发执行任务
                                     JobTriggerPoolHelper.trigger(jobInfo.getId(), TriggerTypeEnum.CRON, -1, null, null, null);
                                     logger.debug(">>>>>>>>>>> xxl-job, schedule push trigger : jobId = " + jobInfo.getId() );
 
@@ -123,9 +151,22 @@ public class JobScheduleHelper {
                                     }
 
                                 } else {
+
+                                    /*
+                                     *
+                                     * ---------current-5s-------------current------taskTime-------current+5s------------->
+                                     *
+                                     *
+                                     */
+
+
+                                    // 该情况表示还没有到任务的执行时间
+
+
                                     // 2.3、trigger-pre-read：time-ring trigger && make next-trigger-time
 
                                     // 1、make ring second
+                                    // 计算该任务在60秒内的第几秒执行
                                     int ringSecond = (int)((jobInfo.getTriggerNextTime()/1000)%60);
 
                                     // 2、push time ring
@@ -224,6 +265,7 @@ public class JobScheduleHelper {
 
                 // align second
                 try {
+                    // 表示ringThread线程只选择在一分钟内的第1,2,3,...57,58,59秒被执行
                     TimeUnit.MILLISECONDS.sleep(1000 - System.currentTimeMillis()%1000 );
                 } catch (InterruptedException e) {
                     if (!ringThreadToStop) {
@@ -237,6 +279,8 @@ public class JobScheduleHelper {
                         // second data
                         List<Integer> ringItemData = new ArrayList<>();
                         int nowSecond = Calendar.getInstance().get(Calendar.SECOND);   // 避免处理耗时太长，跨过刻度，向前校验一个刻度；
+
+                        // 假设nowSecond=13, 那么会将ringData中key=12和13的数据取出来
                         for (int i = 0; i < 2; i++) {
                             List<Integer> tmpData = ringData.remove( (nowSecond+60-i)%60 );
                             if (tmpData != null) {
@@ -250,6 +294,7 @@ public class JobScheduleHelper {
                             // do trigger
                             for (int jobId: ringItemData) {
                                 // do trigger
+                                // 触发任务执行
                                 JobTriggerPoolHelper.trigger(jobId, TriggerTypeEnum.CRON, -1, null, null, null);
                             }
                             // clear

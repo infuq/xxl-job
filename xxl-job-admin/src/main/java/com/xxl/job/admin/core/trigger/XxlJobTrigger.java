@@ -57,7 +57,9 @@ public class XxlJobTrigger {
         if (executorParam != null) {
             jobInfo.setExecutorParam(executorParam);
         }
+        // 失败重试次数(页面可配置该值)
         int finalFailRetryCount = failRetryCount>=0?failRetryCount:jobInfo.getExecutorFailRetryCount();
+
         XxlJobGroup group = XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().load(jobInfo.getJobGroup());
 
         // cover addressList
@@ -76,6 +78,7 @@ public class XxlJobTrigger {
                 shardingParam[1] = Integer.valueOf(shardingArr[1]);
             }
         }
+        // 路由策略
         if (ExecutorRouteStrategyEnum.SHARDING_BROADCAST==ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null)
                 && group.getRegistryList()!=null && !group.getRegistryList().isEmpty()
                 && shardingParam==null) {
@@ -128,8 +131,8 @@ public class XxlJobTrigger {
         triggerParam.setJobId(jobInfo.getId());
         triggerParam.setExecutorHandler(jobInfo.getExecutorHandler());
         triggerParam.setExecutorParams(jobInfo.getExecutorParam());
-        triggerParam.setExecutorBlockStrategy(jobInfo.getExecutorBlockStrategy());
-        triggerParam.setExecutorTimeout(jobInfo.getExecutorTimeout());
+        triggerParam.setExecutorBlockStrategy(jobInfo.getExecutorBlockStrategy());// 阻塞处理策略
+        triggerParam.setExecutorTimeout(jobInfo.getExecutorTimeout());// 任务超时时间
         triggerParam.setLogId(jobLog.getId());
         triggerParam.setLogDateTime(jobLog.getTriggerTime().getTime());
         triggerParam.setGlueType(jobInfo.getGlueType());
@@ -142,6 +145,7 @@ public class XxlJobTrigger {
         String address = null;
         ReturnT<String> routeAddressResult = null;
         if (group.getRegistryList()!=null && !group.getRegistryList().isEmpty()) {
+            // 根据路由策略获取路由地址
             if (ExecutorRouteStrategyEnum.SHARDING_BROADCAST == executorRouteStrategyEnum) {
                 if (index < group.getRegistryList().size()) {
                     address = group.getRegistryList().get(index);

@@ -120,13 +120,16 @@ public class ExecutorBizImpl implements ExecutorBiz {
 
         // executor block strategy
         if (jobThread != null) {
+            // 阻塞处理策略
             ExecutorBlockStrategyEnum blockStrategy = ExecutorBlockStrategyEnum.match(triggerParam.getExecutorBlockStrategy(), null);
+            // 丢弃后续调度
             if (ExecutorBlockStrategyEnum.DISCARD_LATER == blockStrategy) {
                 // discard when running
                 if (jobThread.isRunningOrHasQueue()) {
                     return new ReturnT<String>(ReturnT.FAIL_CODE, "block strategy effect："+ExecutorBlockStrategyEnum.DISCARD_LATER.getTitle());
                 }
             } else if (ExecutorBlockStrategyEnum.COVER_EARLY == blockStrategy) {
+                // 覆盖之前的调度
                 // kill running jobThread
                 if (jobThread.isRunningOrHasQueue()) {
                     removeOldReason = "block strategy effect：" + ExecutorBlockStrategyEnum.COVER_EARLY.getTitle();
@@ -135,6 +138,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
                 }
             } else {
                 // just queue trigger
+                // 单机串行
             }
         }
 
